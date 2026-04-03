@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+models/exported/*.onnx
+models/exported/*.pkl
+models/exported/*.json
+data/*.csv
+.env
+*.onnx
