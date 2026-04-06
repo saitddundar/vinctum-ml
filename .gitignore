@@ -11,3 +11,4 @@ models/exported/*.json
 data/*.csv
 .env
 *.onnx
+models/evaluation/
