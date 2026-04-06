@@ -27,6 +27,7 @@ anomaly_session: ort.InferenceSession | None = None
 
 # Rate limiting: {ip: [timestamps]}
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_start_time: float = 0.0
 RATE_LIMIT_MAX = 100  # requests per window
 RATE_LIMIT_WINDOW = 60  # seconds
 
@@ -76,6 +77,8 @@ class AnomalyResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+    version: str
+    uptime_seconds: float
     models_loaded: dict[str, bool]
 
 
@@ -93,7 +96,8 @@ class RouteResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global route_session, anomaly_session
+    global route_session, anomaly_session, _start_time
+    _start_time = time.time()
 
     route_onnx = MODEL_DIR / "route_scorer.onnx"
     anomaly_onnx = MODEL_DIR / "anomaly_detector.onnx"
@@ -162,6 +166,8 @@ async def log_requests(request: Request, call_next):
 async def health():
     return HealthResponse(
         status="ok",
+        version="0.1.0",
+        uptime_seconds=round(time.time() - _start_time, 1),
         models_loaded={
             "route_scorer": route_session is not None,
             "anomaly_detector": anomaly_session is not None,
