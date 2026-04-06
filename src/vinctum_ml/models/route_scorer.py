@@ -94,15 +94,14 @@ def train(n_samples: int = 10000, seed: int = 42) -> dict:
 
 
 def _export_onnx(model: xgb.XGBRegressor, X_sample, onnx_path: Path):
-    """Export trained model to ONNX format."""
-    from skl2onnx import convert_sklearn
-    from skl2onnx.common.data_types import FloatTensorType
+    """Export trained model to ONNX format using onnxmltools."""
+    from onnxmltools.convert import convert_xgboost
+    from onnxmltools.convert.common.data_types import FloatTensorType
+    import onnx
 
     initial_type = [("input", FloatTensorType([None, X_sample.shape[1]]))]
-    onnx_model = convert_sklearn(model, initial_types=initial_type)
-
-    with open(onnx_path, "wb") as f:
-        f.write(onnx_model.SerializeToString())
+    onnx_model = convert_xgboost(model, initial_types=initial_type)
+    onnx.save_model(onnx_model, str(onnx_path))
 
 
 if __name__ == "__main__":
