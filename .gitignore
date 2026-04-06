@@ -12,3 +12,4 @@ data/*.csv
 .env
 *.onnx
 models/evaluation/
+models/registry/
