@@ -3,6 +3,7 @@ FastAPI serving layer for Vinctum ML models.
 Provides /score and /anomaly endpoints using ONNX Runtime inference.
 """
 
+from collections import defaultdict
 from contextlib import asynccontextmanager
 import time
 
@@ -21,6 +22,11 @@ MODEL_DIR = config.MODEL_DIR
 # Global ONNX sessions
 route_session: ort.InferenceSession | None = None
 anomaly_session: ort.InferenceSession | None = None
+
+# Rate limiting: {ip: [timestamps]}
+_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT_MAX = 100  # requests per window
+RATE_LIMIT_WINDOW = 60  # seconds
 
 
 # -- Request/Response schemas --
@@ -119,12 +125,23 @@ app = FastAPI(
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
 
+    from starlette.responses import JSONResponse
+
     # API key check (skip for health endpoint)
     if config.API_KEY and request.url.path != "/health":
         api_key = request.headers.get("X-API-Key")
         if api_key != config.API_KEY:
-            from starlette.responses import JSONResponse
             return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+
+    # Rate limiting
+    if request.url.path != "/health":
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        window_start = now - RATE_LIMIT_WINDOW
+        _rate_limit_store[client_ip] = [t for t in _rate_limit_store[client_ip] if t > window_start]
+        if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+        _rate_limit_store[client_ip].append(now)
 
     response = await call_next(request)
     duration_ms = (time.perf_counter() - start) * 1000
