@@ -5,12 +5,16 @@ Provides /score and /anomaly endpoints using ONNX Runtime inference.
 
 from pathlib import Path
 from contextlib import asynccontextmanager
+import time
 
 import numpy as np
 import onnxruntime as ort
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from vinctum_ml.logging import get_logger
+
+logger = get_logger("vinctum_ml.serving")
 
 MODEL_DIR = Path(__file__).resolve().parents[3] / "models" / "exported"
 
@@ -88,9 +92,14 @@ async def lifespan(app: FastAPI):
 
     if route_onnx.exists():
         route_session = ort.InferenceSession(str(route_onnx))
+        logger.info("Route scoring model loaded")
 
     if anomaly_onnx.exists():
         anomaly_session = ort.InferenceSession(str(anomaly_onnx))
+        logger.info("Anomaly detection model loaded")
+
+    if not route_session and not anomaly_session:
+        logger.warning("No models found, run training first")
 
     yield
 
@@ -104,6 +113,15 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = (time.perf_counter() - start) * 1000
+    logger.info(f"{request.method} {request.url.path} {response.status_code} {duration_ms:.1f}ms")
+    return response
 
 
 @app.get("/health", response_model=HealthResponse)
