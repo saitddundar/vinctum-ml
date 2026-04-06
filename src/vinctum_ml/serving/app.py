@@ -5,11 +5,13 @@ Provides /score and /anomaly endpoints using ONNX Runtime inference.
 
 from collections import defaultdict
 from contextlib import asynccontextmanager
+import os
 import time
 
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from vinctum_ml.config import config
@@ -118,6 +120,13 @@ app = FastAPI(
     description="AI/ML layer for Vinctum decentralized data courier platform",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("VINCTUM_ML_CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_methods=["GET", "POST"],
+    allow_headers=["X-API-Key", "Content-Type"],
 )
 
 
