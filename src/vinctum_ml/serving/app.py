@@ -3,7 +3,6 @@ FastAPI serving layer for Vinctum ML models.
 Provides /score and /anomaly endpoints using ONNX Runtime inference.
 """
 
-from pathlib import Path
 from contextlib import asynccontextmanager
 import time
 
@@ -12,11 +11,12 @@ import onnxruntime as ort
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from vinctum_ml.config import config
 from vinctum_ml.logging import get_logger
 
-logger = get_logger("vinctum_ml.serving")
+logger = get_logger("vinctum_ml.serving", level=config.LOG_LEVEL)
 
-MODEL_DIR = Path(__file__).resolve().parents[3] / "models" / "exported"
+MODEL_DIR = config.MODEL_DIR
 
 # Global ONNX sessions
 route_session: ort.InferenceSession | None = None
