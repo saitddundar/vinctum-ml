@@ -9,7 +9,7 @@ import time
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vinctum_ml.config import config
 from vinctum_ml.logging import get_logger
@@ -27,20 +27,20 @@ anomaly_session: ort.InferenceSession | None = None
 
 class NodeMetrics(BaseModel):
     """Input matching vinctum-core NodeMetrics struct."""
-    total_events: int
-    successes: int
-    failures: int
-    timeouts: int
-    reroutes: int
-    circuit_opens: int
-    avg_latency_ms: float
-    min_latency_ms: float = 0.0
-    max_latency_ms: float = 0.0
-    p95_latency_ms: float
-    total_bytes: int = 0
-    avg_bytes_per_op: float
-    failure_rate: float
-    uptime: float = 0.0
+    total_events: int = Field(ge=0)
+    successes: int = Field(ge=0)
+    failures: int = Field(ge=0)
+    timeouts: int = Field(ge=0)
+    reroutes: int = Field(ge=0)
+    circuit_opens: int = Field(ge=0)
+    avg_latency_ms: float = Field(ge=0.0)
+    min_latency_ms: float = Field(default=0.0, ge=0.0)
+    max_latency_ms: float = Field(default=0.0, ge=0.0)
+    p95_latency_ms: float = Field(ge=0.0)
+    total_bytes: int = Field(default=0, ge=0)
+    avg_bytes_per_op: float = Field(ge=0.0)
+    failure_rate: float = Field(ge=0.0, le=1.0)
+    uptime: float = Field(default=0.0, ge=0.0, le=1.0)
 
 
 class ScoreRequest(BaseModel):
