@@ -1,0 +1,25 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - VINCTUM_ML_LOG_LEVEL=info
+      - VINCTUM_ML_WORKERS=2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  train:
+    build: .
+    command: python train.py
+    volumes:
+      - model-data:/app/models/exported
+    profiles:
+      - train
+
+volumes:
+  model-data:
