@@ -1,0 +1,13 @@
+venv/
+.git/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+notebooks/
+tests/
+.github/
+.pytest_cache/
+models/evaluation/
+models/registry/
