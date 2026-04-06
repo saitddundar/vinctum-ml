@@ -118,6 +118,14 @@ app = FastAPI(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
+
+    # API key check (skip for health endpoint)
+    if config.API_KEY and request.url.path != "/health":
+        api_key = request.headers.get("X-API-Key")
+        if api_key != config.API_KEY:
+            from starlette.responses import JSONResponse
+            return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+
     response = await call_next(request)
     duration_ms = (time.perf_counter() - start) * 1000
     logger.info(f"{request.method} {request.url.path} {response.status_code} {duration_ms:.1f}ms")
