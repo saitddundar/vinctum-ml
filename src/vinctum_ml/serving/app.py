@@ -36,18 +36,18 @@ RATE_LIMIT_WINDOW = 60  # seconds
 
 class NodeMetrics(BaseModel):
     """Input matching vinctum-core NodeMetrics struct."""
-    total_events: int = Field(ge=0)
-    successes: int = Field(ge=0)
-    failures: int = Field(ge=0)
-    timeouts: int = Field(ge=0)
-    reroutes: int = Field(ge=0)
-    circuit_opens: int = Field(ge=0)
-    avg_latency_ms: float = Field(ge=0.0)
-    min_latency_ms: float = Field(default=0.0, ge=0.0)
-    max_latency_ms: float = Field(default=0.0, ge=0.0)
-    p95_latency_ms: float = Field(ge=0.0)
-    total_bytes: int = Field(default=0, ge=0)
-    avg_bytes_per_op: float = Field(ge=0.0)
+    total_events: int = Field(ge=0, le=100_000_000)
+    successes: int = Field(ge=0, le=100_000_000)
+    failures: int = Field(ge=0, le=100_000_000)
+    timeouts: int = Field(ge=0, le=100_000_000)
+    reroutes: int = Field(ge=0, le=10_000_000)
+    circuit_opens: int = Field(ge=0, le=1_000_000)
+    avg_latency_ms: float = Field(ge=0.0, le=1_000_000.0)
+    min_latency_ms: float = Field(default=0.0, ge=0.0, le=1_000_000.0)
+    max_latency_ms: float = Field(default=0.0, ge=0.0, le=1_000_000.0)
+    p95_latency_ms: float = Field(ge=0.0, le=1_000_000.0)
+    total_bytes: int = Field(default=0, ge=0, le=10**15)
+    avg_bytes_per_op: float = Field(ge=0.0, le=10**9)
     failure_rate: float = Field(ge=0.0, le=1.0)
     uptime: float = Field(default=0.0, ge=0.0, le=1.0)
 
@@ -66,7 +66,7 @@ class ScoreResponse(BaseModel):
 class AnomalyRequest(BaseModel):
     node_id: str
     metrics: NodeMetrics
-    events_per_minute: float = 10.0
+    events_per_minute: float = Field(default=10.0, ge=0.0, le=10_000_000.0)
 
 
 class AnomalyResponse(BaseModel):
@@ -144,7 +144,7 @@ async def log_requests(request: Request, call_next):
     if config.API_KEY and request.url.path != "/health":
         api_key = request.headers.get("X-API-Key")
         if api_key != config.API_KEY:
-            return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
 
     # Rate limiting
     if request.url.path != "/health":
