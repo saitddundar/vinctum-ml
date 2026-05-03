@@ -93,7 +93,11 @@ def _export_onnx(model: IsolationForest, X_sample, onnx_path: Path):
     from skl2onnx.common.data_types import FloatTensorType
 
     initial_type = [("input", FloatTensorType([None, X_sample.shape[1]]))]
-    onnx_model = convert_sklearn(model, initial_types=initial_type)
+    onnx_model = convert_sklearn(
+        model,
+        initial_types=initial_type,
+        target_opset={"": 17, "ai.onnx.ml": 3},
+    )
 
     with open(onnx_path, "wb") as f:
         f.write(onnx_model.SerializeToString())

@@ -99,6 +99,10 @@ def _export_onnx(model: xgb.XGBRegressor, X_sample, onnx_path: Path):
     from onnxmltools.convert.common.data_types import FloatTensorType
     import onnx
 
+    # onnxmltools requires feature names in 'f%d' format;
+    # strip pandas column names before conversion.
+    model.get_booster().feature_names = [f"f{i}" for i in range(X_sample.shape[1])]
+
     initial_type = [("input", FloatTensorType([None, X_sample.shape[1]]))]
     onnx_model = convert_xgboost(model, initial_types=initial_type)
     onnx.save_model(onnx_model, str(onnx_path))
